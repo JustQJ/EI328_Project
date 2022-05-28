@@ -2,12 +2,8 @@ from sklearn.cluster import KMeans
 import scipy.io as sio
 import numpy as np
 import os
-import random
 import cvxopt
 
-
-
-# 读入数据
 PathSEED_X =os.path.abspath(os.path.join(os.path.abspath(__file__),os.pardir,os.pardir,"SEED-III","EEG_X.mat"))
 PathSEED_Y =os.path.abspath(os.path.join(os.path.abspath(__file__),os.pardir,os.pardir,"SEED-III","EEG_Y.mat"))
 EEG_X = sio.loadmat(PathSEED_X)['X'][0]
@@ -15,6 +11,16 @@ EEG_Y = sio.loadmat(PathSEED_Y)['Y'][0] + 1
 
 
 def mappingMatrix(testNumber, gammahat, betahat, destNumber, session1, session2, session3):
+    '''
+    :param testNumber: 测试的对象
+    :param gammahat: 参数
+    :param betahat: 参数
+    :param destNumber: 源域对象
+    :param session1: 第一个session的范围
+    :param session2:  第二个session的范围
+    :param session3:  第三个session的范围
+    :return: 从目标到该源域的mapping参数 A, b
+    '''
 
     # 校验数据
     cal_X = []
@@ -103,104 +109,104 @@ def mappingMatrix(testNumber, gammahat, betahat, destNumber, session1, session2,
 
     A1 = np.eye(dim)
     b1 = np.zeros((dim, 1))
-    # # 监督学习部分
-    #
-    # alpha = 0.8
-    # f1 = np.array([alpha for _ in range(total_X.shape[0])])
-    # iter_number = 5
-    #
-    #
-    # for iter in range(iter_number):
-    #     destinations = []
-    #
-    #     mapping_x = np.dot(A1, test_X.transpose()) + b1
-    #     mapping_x = mapping_x.transpose()
-    #     deltatest = []  # 测试数据x的两个距离的差值
-    #
-    #     for i in range(mapping_x.shape[0]):
-    #         d1 = min([np.linalg.norm(mapping_x[i] - cluster_X[0][u]) for u in range(15)])
-    #         d2 = min([np.linalg.norm(mapping_x[i] - cluster_X[1][u]) for u in range(15)])
-    #         d3 = min([np.linalg.norm(mapping_x[i] - cluster_X[2][u]) for u in range(15)])
-    #         dists = [d1, d2, d3]
-    #         label = dists.index(min(dists)) #预测标签
-    #         distances = [np.linalg.norm(test_X[i] - cluster_X[label][u]) for u in range(15)] #在预测标签的类别中找到target
-    #         mindex = distances.index(min(distances))
-    #         destinations.append(cluster_X[label][mindex])
-    #         dists1 = sorted(dists)
-    #
-    #         deltatest.append(dists1[1]-dists1[0])
-    #
-    #
-    #     # confidence
-    #     mapping_orderx = np.dot(A1, order_X.transpose()) + b1
-    #     mapping_orderx = mapping_orderx.transpose()
-    #     predlabel = np.zeros((order_X.shape[0],))
-    #     delta = []
-    #     for i in range(mapping_orderx.shape[0]):
-    #         d1 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[0][u]) for u in range(15)])
-    #         d2 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[1][u]) for u in range(15)])
-    #         d3 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[2][u]) for u in range(15)])
-    #         dist1 = min(d1, min(d2, d3))
-    #         dist2 = d1
-    #         if dist1 == d1:
-    #             dist2 = min(d2,d3)
-    #             predlabel[i] = 2
-    #         elif dist1 == d2:
-    #             dist2 = min(d1, d3)
-    #             predlabel[i] = 1
-    #         elif dist1 == d3:
-    #             dist2 = min(d1, d2)
-    #             predlabel[i] = 0
-    #
-    #         delta.append(dist2-dist1)
-    #
-    #     deltamin = min(delta)
-    #     deltamax = max(delta)
-    #     kumber = 20
-    #     deltawide = (deltamax - deltamin) / kumber
-    #     ffk = [0 for i in range(kumber)]
-    #     bin = [[] for i in range(kumber)]
-    #     for i in range(order_X.shape[0]):
-    #         j = min(kumber - 1, int((delta[i] - deltamin) / deltawide))  # 找到其对应的范围
-    #         a = 0
-    #         if predlabel[i] == order_Y[i][0]:  # 判断是否预测正确
-    #             a = 1
-    #         bin[j].append(a)
-    #     for i in range(kumber):
-    #         if len(bin[i]) == 0:
-    #             ffk[i] = 0
-    #         else:
-    #             ffk[i] = sum(bin[i]) / len(bin[i])  # 为真的数量除以总数
-    #
-    #     pk = quadprog(ffk, kumber)
-    #
-    #     for i in range(mapping_x.shape[0]):
-    #
-    #         if deltatest[i]<=deltamin:
-    #             f1[i + session3 + 1] = pk[0]
-    #         elif deltatest[i]>=deltamax:
-    #             f1[i + session3 + 1] = pk[kumber-1]
-    #         else:
-    #             j = min(kumber - 1, int((deltatest[i] - deltamin) / deltawide))
-    #             f1[i + session3 + 1] = pk[j]
-    #
-    #     # 更新A1 b1
-    #     destinations = np.array(destinations)
-    #     dest = np.vstack((Dest, destinations))
-    #     beta = beta_hat / dim * np.trace(
-    #         sum([f1[j] * np.dot(total_X[j].reshape(-1, 1), total_X[j].reshape(1, -1)) for j in
-    #              range(total_X.shape[0])]))
-    #     gamma = gamma_hat * sum(f1)
-    #     f_hat = sum(f1) + gamma
-    #     origin_hat = sum([f1[j] * total_X[j].reshape(-1, 1) for j in range(total_X.shape[0])])
-    #     dest_hat = sum([f1[j] * dest[j].reshape(-1, 1) for j in range(dest.shape[0])])
-    #     P1 = sum([f1[j] * np.dot(total_X[j].reshape(-1, 1), dest[j].reshape(1, -1)) for j in
-    #               range(total_X.shape[0])]) - np.dot(origin_hat, origin_hat.transpose()) / f_hat + beta * np.eye(
-    #         dim)
-    #     Q1 = sum([f1[j] * np.dot(dest[j].reshape(-1, 1), total_X[j].reshape(1, -1)) for j in
-    #               range(total_X.shape[0])]) - np.dot(dest_hat, origin_hat.transpose()) / f_hat + beta * np.eye(dim)
-    #     A1 = np.dot(Q1, np.linalg.inv(P1))
-    #     b1 = (dest_hat - np.dot(A1, origin_hat)) / f_hat
+    # 监督学习部分
+
+    alpha = 0.8
+    f1 = np.array([alpha for _ in range(total_X.shape[0])])
+    iter_number = 5
+
+
+    for iter in range(iter_number):
+        destinations = []
+
+        mapping_x = np.dot(A1, test_X.transpose()) + b1
+        mapping_x = mapping_x.transpose()
+        deltatest = []  # 测试数据x的两个距离的差值
+
+        for i in range(mapping_x.shape[0]):
+            d1 = min([np.linalg.norm(mapping_x[i] - cluster_X[0][u]) for u in range(15)])
+            d2 = min([np.linalg.norm(mapping_x[i] - cluster_X[1][u]) for u in range(15)])
+            d3 = min([np.linalg.norm(mapping_x[i] - cluster_X[2][u]) for u in range(15)])
+            dists = [d1, d2, d3]
+            label = dists.index(min(dists)) #预测标签
+            distances = [np.linalg.norm(test_X[i] - cluster_X[label][u]) for u in range(15)] #在预测标签的类别中找到target
+            mindex = distances.index(min(distances))
+            destinations.append(cluster_X[label][mindex])
+            dists1 = sorted(dists)
+
+            deltatest.append(dists1[1]-dists1[0])
+
+
+        # confidence
+        mapping_orderx = np.dot(A1, order_X.transpose()) + b1
+        mapping_orderx = mapping_orderx.transpose()
+        predlabel = np.zeros((order_X.shape[0],)) #
+        delta = []
+        for i in range(mapping_orderx.shape[0]):
+            d1 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[0][u]) for u in range(15)])
+            d2 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[1][u]) for u in range(15)])
+            d3 = min([np.linalg.norm(mapping_orderx[i] - cluster_X[2][u]) for u in range(15)])
+            dist1 = min(d1, min(d2, d3))
+            dist2 = d1
+            if dist1 == d1:
+                dist2 = min(d2,d3)
+                predlabel[i] = 2
+            elif dist1 == d2:
+                dist2 = min(d1, d3)
+                predlabel[i] = 1
+            elif dist1 == d3:
+                dist2 = min(d1, d2)
+                predlabel[i] = 0
+
+            delta.append(dist2-dist1)
+
+        deltamin = min(delta)
+        deltamax = max(delta)
+        kumber = 20
+        deltawide = (deltamax - deltamin) / kumber
+        ffk = [0 for i in range(kumber)]
+        bin = [[] for i in range(kumber)]
+        for i in range(order_X.shape[0]):
+            j = min(kumber - 1, int((delta[i] - deltamin) / deltawide))  # 找到其对应的范围
+            a = 0
+            if predlabel[i] == order_Y[i][0]:  # 判断是否预测正确
+                a = 1
+            bin[j].append(a)
+        for i in range(kumber):
+            if len(bin[i]) == 0:
+                ffk[i] = 0
+            else:
+                ffk[i] = sum(bin[i]) / len(bin[i])  # 为真的数量除以总数
+
+        pk = quadprog(ffk, kumber)
+
+        for i in range(mapping_x.shape[0]):
+
+            if deltatest[i]<=deltamin:
+                f1[i + session3 + 1] = pk[0]
+            elif deltatest[i]>=deltamax:
+                f1[i + session3 + 1] = pk[kumber-1]
+            else:
+                j = min(kumber - 1, int((deltatest[i] - deltamin) / deltawide))
+                f1[i + session3 + 1] = pk[j]
+
+        # 更新A1 b1
+        destinations = np.array(destinations)
+        dest = np.vstack((Dest, destinations))
+        beta = beta_hat / dim * np.trace(
+            sum([f1[j] * np.dot(total_X[j].reshape(-1, 1), total_X[j].reshape(1, -1)) for j in
+                 range(total_X.shape[0])]))
+        gamma = gamma_hat * sum(f1)
+        f_hat = sum(f1) + gamma
+        origin_hat = sum([f1[j] * total_X[j].reshape(-1, 1) for j in range(total_X.shape[0])])
+        dest_hat = sum([f1[j] * dest[j].reshape(-1, 1) for j in range(dest.shape[0])])
+        P1 = sum([f1[j] * np.dot(total_X[j].reshape(-1, 1), dest[j].reshape(1, -1)) for j in
+                  range(total_X.shape[0])]) - np.dot(origin_hat, origin_hat.transpose()) / f_hat + beta * np.eye(
+            dim)
+        Q1 = sum([f1[j] * np.dot(dest[j].reshape(-1, 1), total_X[j].reshape(1, -1)) for j in
+                  range(total_X.shape[0])]) - np.dot(dest_hat, origin_hat.transpose()) / f_hat + beta * np.eye(dim)
+        A1 = np.dot(Q1, np.linalg.inv(P1))
+        b1 = (dest_hat - np.dot(A1, origin_hat)) / f_hat
 
     A = np.dot(A1, A0)
     b = np.dot(A1, b0) + b1
@@ -330,52 +336,23 @@ def learning(testNumber, gamma_hat, beta_hat):
 
     return finalacc
 
-
-
-
-
-
 def crossValidation():
-    np.random.seed(0)
 
-
-    gammalist = np.arange(0,3, 0.2)
-    betalist = np.arange(0,3,0.2)
-    bestgamma = 0
-    bestbeta = 0
-    maxacc = 0
-    for gamma in gammalist:
-        for beta in betalist:
-            accuracy = []
-            for i in range(15):
-                ac = learning(i,gamma,beta)
-                accuracy.append(ac)
-            totalacc = sum(accuracy) / len(accuracy)
-            print(gamma, beta,totalacc, accuracy)
-
-            if totalacc>maxacc:
-                maxacc = totalacc
-                bestbeta = beta
-                bestgamma = gamma
-
-    print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFfffffffff")
-    print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFfffffffff")
-
-    print(bestbeta,bestgamma, maxacc)
-
-
-
-
-
-
-
-
-
-
-
+    gamma_hat = 0.2
+    beta_hat = 0.6
+    crossaccracy = []
+    for i in range(15):
+        ac = learning(i, gamma_hat, beta_hat)
+        crossaccracy.append(ac)
+    totalacc = sum(crossaccracy) / len(crossaccracy)
+    print("the accuracy of each subject:", crossaccracy)
+    print("the average accuracy of 15-fold validation:", totalacc)
 
 if __name__ == '__main__':
-  crossValidation()
+    '''
+    可以运行，但是效果极差，时间较长
+    '''
+    crossValidation()
 
 
 

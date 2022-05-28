@@ -29,4 +29,7 @@ def crossValidation():
 
 
 if __name__ == '__main__':
+    '''
+    运行会进行交叉验证，但是要保证./parameters里的各个文件下只有一份参数
+    '''
     crossValidation()

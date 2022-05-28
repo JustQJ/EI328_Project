@@ -17,7 +17,7 @@ EEG_X = sio.loadmat(PathSEED_X)['X'][0]
 EEG_Y = sio.loadmat(PathSEED_Y)['Y'][0] + 1
 
 parameterfile = []
-parameterfiles = os.path.abspath(os.path.join(os.path.abspath(__file__), os.pardir, os.pardir,"BaseNN", "HistoryParameters", "ObjectParameters"))
+parameterfiles = os.path.abspath(os.path.join("BaseNN", "HistoryParameters", "ObjectParameters"))
 files = os.listdir(parameterfiles)
 for file in files:
     parameterfile.append(os.path.join(parameterfiles,file))
@@ -142,6 +142,13 @@ def mappingMatrix(testNumber, gammahat, betahat, destNumber, session1, session2,
 
 
 def learning(testNumber, gamma_hat, beta_hat, choosenumber):
+    '''
+    :param testNumber: 测试对象
+    :param gamma_hat: 参数
+    :param beta_hat: 参数
+    :param choosenumber: 选择的源域的数量
+    :return: 得到此次测试精度
+    '''
 
     session1 = 0
     session2 = 0
@@ -234,6 +241,9 @@ def crossValidation():
 
 if __name__ == '__main__':
 
+    '''
+    运行后给出15折交叉验证结果
+    '''
     crossValidation()
 
 
